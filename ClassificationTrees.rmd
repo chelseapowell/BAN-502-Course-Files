@@ -1,0 +1,131 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Module 4 Assignment 1
+##Classification Trees
+###Chelsea Powell
+
+```{r}
+library(tidyverse)
+library(caret)
+library(rpart)
+library(RColorBrewer)
+#install.packages("e1071")
+#install.packages("rattle")
+
+library(rattle)
+library(e1071)
+```
+
+```{r}
+library(readr)
+parole <- read_csv("parole.csv")
+View(parole)
+
+str(parole)
+summary(parole)
+```
+
+```{r}
+parole = parole %>% mutate(male = as.factor(male)) %>% 
+  mutate(male = fct_recode(male, "female" = "0", "male" = "1" )) %>%
+  mutate(race = as.factor(race)) %>% mutate(race = as.factor(race)) %>%
+  mutate(race = fct_recode(race, "white" = "1", "other" = "2" )) %>%
+  mutate(state = as.factor(state)) %>%
+  mutate(state = fct_recode(state, "Other" = "1", "Kentucky" = "2", "Louisiana" = "3", "Virginia" = "4" )) %>%
+  mutate(crime = as.factor(crime)) %>% 
+  mutate(crime = fct_recode(crime, "Other" = "1", "Larceny" = "2", "Drug" = "3", "Driving" = "4" )) %>%
+  mutate(multiple.offenses = as.factor(multiple.offenses)) %>% 
+  mutate(multiple.offenses = fct_recode(multiple.offenses, "Single Offense" = "0", "Multiple Offenses" = "1" )) %>%
+  mutate(violator = as.factor(violator)) %>% 
+  mutate(violator = fct_recode(violator, "completed" = "0", "violated" = "1" ))
+str(parole)
+```
+
+```{r}
+set.seed(12345)
+train.rows = createDataPartition(y=parole$violator, p=0.7, list = FALSE)
+train = parole[train.rows,]
+test = parole[-train.rows,]
+```
+
+```{r}
+tree1 = rpart(violator  ~., train, method="class")
+fancyRpartPlot(tree1)
+```
+Based on the classification tree I would say that he has a 7% chance of completing his parole. To determine this I went through the tree and evluated him based on the levels. He is from Louisiana so we go to the right in our decision tree for the state=other, kentucky, virginia. He is less than 43 years old so I go the left for yes and his time served is greater than 2.6 so I go left again and arrive to my 7% chance of completing his parole conclusion.
+
+```{r}
+printcp(tree1)
+plotcp(tree1)
+```
+The CP level of .054545 shold be chosen because it has the lowest relative error value.
+
+```{r}
+tree2 = prune(tree1,cp= tree1$cptable[which.min(tree1$cptable[,"xerror"]),"CP"])
+printcp(tree2)
+```
+Age is the majority class of the training set.
+
+```{r}
+treepred = predict(tree1, train, type = "class")
+head(treepred)
+```
+
+```{r}
+confusionMatrix(treepred,train$violator,positive="completed")
+```
+
+
+```{r}
+treepred_test = predict(tree1, newdata = test, type="class")
+confusionMatrix(treepred_test,test$violator,positive="completed")
+```
+This model is a little less accurate than our testing model. If we were to assume that everyone completed their parole we would be right 88.6% of the time.
+
+```{r}
+library(readr)
+blood <- read_csv("blood.csv")
+View(blood)
+```
+```{r}
+blood = blood %>% mutate(DonatedMarch = as.factor(DonatedMarch)) %>% 
+  mutate(DonatedMarch = fct_recode(DonatedMarch, "No" = "0", "Yes" = "1" ))
+```
+
+```{r}
+set.seed(1234)
+train.rows = createDataPartition(y=parole$violator, p=0.7, list = FALSE)
+train2 = blood[train.rows,]
+test2 = blood[-train.rows,]
+```
+
+```{r}
+tree3 = rpart(DonatedMarch  ~., train2, method="class")
+fancyRpartPlot(tree3)
+```
+
+```{r}
+printcp(tree3)
+plotcp(tree3)
+```
+
+```{r}
+tree4 = prune(tree3,cp= tree3$cptable[which.min(tree3$cptable[,"xerror"]),"CP"])
+printcp(tree4)
+```
+
+```{r}
+treepred_train1 = predict(tree3, newdata = train2, type="class")
+confusionMatrix(treepred_train1,train2$DonatedMarch,positive="Yes")
+```
+The training model is 79.92% accurate. If we assumed that everyone gave then we would be right 75.9% of the time.
+```{r}
+treepred_test1 = predict(tree3, newdata = test2, type="class")
+confusionMatrix(treepred_test1,test2$DonatedMarch,positive="Yes")
+```
+The testing model is a little less accurate than our training model. The testing model is 79.64% accurate.
+
+

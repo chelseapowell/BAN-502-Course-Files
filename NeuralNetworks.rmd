@@ -1,0 +1,125 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 501: Module 5 Assignment 1
+##Chelsea Powell
+###Neural Networks
+
+```{r}
+library(tidyverse)
+library(caret)
+library(nnet)
+```
+
+```{r}
+library(readr)
+parole <- read_csv("parole.csv")
+
+parole = parole %>% mutate(male = as.factor(male)) %>% 
+  mutate(male = fct_recode(male, "female" = "0", "male" = "1" )) %>%
+  mutate(race = as.factor(race)) %>% mutate(race = as.factor(race)) %>%
+  mutate(race = fct_recode(race, "white" = "1", "other" = "2" )) %>%
+  mutate(state = as.factor(state)) %>%
+  mutate(state = fct_recode(state, "Other" = "1", "Kentucky" = "2", "Louisiana" = "3", "Virginia" = "4" )) %>%
+  mutate(crime = as.factor(crime)) %>% 
+  mutate(crime = fct_recode(crime, "Other" = "1", "Larceny" = "2", "Drug" = "3", "Driving" = "4" )) %>%
+  mutate(multiple.offenses = as.factor(multiple.offenses)) %>% 
+  mutate(multiple.offenses = fct_recode(multiple.offenses, "Single Offense" = "0", "Multiple Offenses" = "1" )) %>%
+  mutate(violator = as.factor(violator)) %>% 
+  mutate(violator = fct_recode(violator, "completed" = "0", "violated" = "1" ))
+
+summary(parole)
+```
+
+```{r}
+set.seed(12345)
+train.rows = createDataPartition(y=parole$violator, p=0.7, list = FALSE)
+train = parole[train.rows,]
+test = parole[-train.rows,]
+```
+
+```{r}
+start_time = Sys.time() #for timing
+fitControl = trainControl(method = "cv", 
+                           number = 10)
+
+nnetGrid <-  expand.grid(size = 12, decay = 0.1)
+
+set.seed(1234)
+nnetBasic = train(violator ~ ., 
+                 parole,
+                 method = "nnet",
+                 tuneGrid = nnetGrid,
+                 trControl = fitControl,
+                 verbose = FALSE,
+                 trace = FALSE)
+
+end_time = Sys.time()
+end_time-start_time
+```
+```{r}
+nnetBasic
+```
+```{r}
+predNetBasic = predict(nnetBasic, train)
+```
+
+Confusion matrix
+```{r}
+confusionMatrix(predNetBasic, train$violator, positive = "completed")
+```
+This model is 93% accurate. Without knowing any information this model will be right 88.3% of the time. This seems to be a pretty good model so far - we will see if the upcoming models are any better.
+
+```{r}
+start_time = Sys.time() #for timing
+fitControl = trainControl(method = "cv", 
+                           number = 10)
+
+nnetGrid =  expand.grid(size = seq(from = 1, to = 12, by = 1),
+                        decay = seq(from = 0.1, to = 0.5, by = 0.1))
+set.seed(1234)
+nnetFit = train(violator ~ ., 
+                 parole,
+                 method = "nnet",
+                 trControl = fitControl,
+                 tuneGrid = nnetGrid,
+                 verbose = FALSE,
+                 trace = FALSE)
+
+end_time = Sys.time()
+end_time-start_time
+```
+
+```{r}
+predNet = predict(nnetFit, train)
+```
+
+Confusion matrix
+```{r}
+confusionMatrix(predNet, train$violator, positive = "completed")
+```
+This model is also pretty good. The accuracy went down to 93% compared to the previous basic neural network model of 93%. The no information rate stayed the same.
+
+```{r}
+predNetBasic1 = predict(nnetBasic, test)
+```
+
+Confusion matrix
+```{r}
+confusionMatrix(predNetBasic1, test$violator, positive = "completed")
+```
+Also a pretty good model with an accuracy of 93.56%. That is very similar to the training model.
+
+```{r}
+predNet1 = predict(nnetFit, test)
+```
+
+Confusion matrix
+```{r}
+confusionMatrix(predNet1, test$violator, positive = "completed")
+```
+This model is a tad less accurate than the training model but still fairly accurate.
+
+I would say there is no overfitting in the basic neural network that was done in the beginning of this assignment. The differences between accuracy in the testing and training models is very small. There is a .0033 difference between the two models and testing model is more accurate - so no overfitting here. The grid neural network model has more of a difference between the testing and training sets. The difference is 0.0109 so about 1%. There may be a tad of overfitting on the grid neural network but it's not a drastic amount.

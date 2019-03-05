@@ -1,0 +1,69 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+###Assignment 1
+##Chelsea Powell
+#BAN 502
+
+```{r load packages}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+
+```{r}
+diamonddata = diamonds
+
+glimpse(diamonddata)
+```
+
+```{r}
+ggplot(diamonddata, aes(x=carat, y=price)) + geom_point()
+```
+
+As we can see from the scatterplot above the larger the carat gets the more expensive the diamond can be.
+
+```{r}
+ggplot(diamonddata, aes(x=carat, y=price, color=cut)) + geom_point()
+```
+
+Based on the scatterplot above it appears that the most expensive diamonds have a premium or ideal cut with a larger carat. The cut of a diamond is important when determining how much the diamond is worth.
+
+```{r}
+ggplot(diamonddata, aes(x=carat, y=price, color=cut)) + facet_grid(rows = vars(color)) + geom_point()
+
+```
+From the scatterplot above it appears that the larger carat diamonds have a more common color of H, I, or J. The D and E colored diamonds are smaller but are more expensive.
+
+```{r}
+library(readr)
+Inventory <- read_csv("InventoryData.csv")
+View(Inventory)
+```
+
+```{r}
+InventoryA = filter(Inventory, Supplier == "A")
+glimpse(InventoryA)
+```
+There are 3,695 rows in this new data frame.
+
+```{r}
+InventoryA = mutate(InventoryA, OnHandRatio = `On Hand` / `Annual Demand`)
+
+```
+This line of code creates a new column that calcuates the on hand ration of a product in our inventory.
+
+```{r}
+avg_cost = Inventory %>% group_by(`Item SKU`) %>% summarise(SKUAvgCost = mean(`Cost per Unit ($)`))
+```
+
+I found the grouping and filter the most challenging in this assignemnt. The faceting part of one of the questions also confused me. I'm not actually sure if I did it right. I need to dust off the cobwebs and get familiar with R again.
+
+
+
+
+
+
+
+

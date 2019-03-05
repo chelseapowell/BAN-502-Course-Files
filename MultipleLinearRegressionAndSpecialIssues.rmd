@@ -1,0 +1,166 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Module 2 Assignment 2
+##Chelsea Powell
+###Multiple Linear Regression and Speical Issues
+
+```{r load libraries}
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+library(GGally)
+
+#install.packages("MASS")
+#install.packages("leaps")
+
+library(MASS)
+library(leaps)
+```
+
+```{r}
+library(readr)
+bike <- read_csv("hour.csv")
+View(bike)
+
+bike = bike %>% mutate(season = as_factor(as.character(season))) %>%
+mutate(season = fct_recode(season,
+"Spring" = "1",
+"Summer" = "2",
+"Fall" = "3",
+"Winter" = "4")) %>%
+mutate(yr = as_factor(as.character(yr))) %>%
+mutate(mnth = as_factor(as.character(mnth))) %>%
+mutate(hr = as_factor(as.character(hr)))%>% 
+mutate(holiday = as_factor(as.character(holiday))) %>%
+mutate(holiday = fct_recode(holiday,
+"Not Holiday" = "0",
+"Holiday" = "1")) %>%
+mutate(workingday = as_factor(as.character(workingday))) %>%
+  mutate(workingday = fct_recode(workingday,
+"NotWorkingDay" = "0",
+"WorkingDay" = "1")) %>%
+mutate(weathersit = as_factor(as.character(weathersit))) %>%
+mutate(weathersit = fct_recode(weathersit,
+"NoPrecip" = "1",
+"Misty" = "2",
+"LightPrecip" = "3",
+"HeavyPrecip" = "4")) %>%
+mutate(weekday = as_factor(as.character(weekday))) %>%
+mutate(weekday = fct_recode(weekday,
+"Monday" = "1",
+"Tuesday" = "2",
+"Wednesday" = "3",
+"Thursday" = "4",
+"Friday" = "5",
+"Saturday" = "6",
+"Sunday" = "0"))
+
+glimpse(bike)
+```
+
+Converting these variables allows us to use these in our correlation calculations and allows us to visualize these variables in models. 
+
+```{r}
+ggcorr(bike, label=TRUE)
+```
+
+The variable casual appears to be the best correlated with the variable count.
+
+```{r}
+ggplot(bike,aes(x=hr,y=count)) + geom_boxplot()
+```
+
+```{r}
+ggplot(bike,aes(x=season,y=count)) + geom_boxplot()
+```
+Season does appear to affect count. There are more bikers during the warmer seasons.
+
+```{r}
+ggplot(bike,aes(x=yr,y=count)) + geom_boxplot()
+```
+Year does appear to affect count. There wee more bikers during year 1.
+
+```{r}
+ggplot(bike,aes(x=mnth,y=count)) + geom_boxplot()
+```
+Month does affect count. There are more bikers during warmer months than the colder months.
+
+```{r}
+ggplot(bike,aes(x=holiday,y=count)) + geom_boxplot()
+```
+Holiday does not affect the count. These two boxplots look about the same.
+
+```{r}
+ggplot(bike,aes(x=weekday,y=count)) + geom_boxplot()
+```
+Weekday does not affect count. They are all about the same.
+
+```{r}
+ggplot(bike,aes(x=workingday,y=count)) + geom_boxplot()
+```
+Working day does not appear to affect count. People ride bikes regardless of if it is a working day or not.
+
+```{r}
+ggplot(bike,aes(x=weathersit,y=count)) + geom_boxplot()
+```
+The weather situation variable does affect the count. If the weather is bad it makes sense for less people to ride a bike during it.
+
+```{r}
+bike2 = bike %>% dplyr::select(-c(instant, dteday, registered, casual))
+
+ggcorr(bike2, label = "TRUE")
+```
+
+```{r}
+mod1 = lm(count ~ temp, bike2)
+summary(mod1)
+```
+
+```{r}
+allmod = lm(count ~., bike2)
+summary(allmod)
+```
+```{r}
+emptymod = lm(count ~1, bike2)
+summary(emptymod)
+```
+
+```{r}
+forwardmod = stepAIC(emptymod, direction = "forward", scop=list(upper=allmod,lower=emptymod), trace=TRUE)
+```
+
+All the variables but workingday are included in the forward model. combining all of these variables gives us the lowest AIC. This does make sense because these variables are all about weather conditions, when all of these are combined it gives us a better picture of why our count is what it is in a specific time.
+```{r}
+backmod = stepAIC(allmod, direction = "backward", trace = TRUE)
+```
+```{r}
+summary(backmod)
+```
+This model is similar but workingday is included. Workingday is kicked out because it is represented with the weekday and holiday variables.
+
+```{r}
+bike2 = bike2 %>% mutate(yr = as.integer(yr)-1)
+
+```
+
+```{r}
+allmod1 = lm(count ~., bike2)
+summary(allmod1)
+```
+
+```{r}
+emptymod1 = lm(count ~1, bike2)
+summary(emptymod1)
+```
+
+```{r}
+forwardmod1 = stepAIC(emptymod1, direction = "forward", scop=list(upper=allmod1,lower=emptymod1), trace=TRUE)
+```
+
+```{r}
+backmod1 = stepAIC(allmod1, direction = "backward", trace = TRUE)
+```
+
+No, the model did not change when we recoded the year variable.

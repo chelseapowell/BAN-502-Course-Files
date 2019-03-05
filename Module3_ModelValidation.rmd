@@ -1,0 +1,103 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Module 3 Assignment 1
+##Chelsea Powell
+###Model Validation
+
+```{r}
+library(tidyverse)
+library(MASS)
+#install.packages("caret")
+library(caret)
+```
+
+```{r}
+library(readr)
+bike <- read_csv("hour.csv")
+
+bike = bike %>% mutate(season = as_factor(as.character(season))) %>%
+mutate(season = fct_recode(season,
+"Spring" = "1",
+"Summer" = "2",
+"Fall" = "3",
+"Winter" = "4")) %>%
+mutate(yr = as_factor(as.character(yr))) %>%
+mutate(mnth = as_factor(as.character(mnth))) %>%
+mutate(hr = as_factor(as.character(hr)))%>% 
+mutate(holiday = as_factor(as.character(holiday))) %>%
+mutate(holiday = fct_recode(holiday,
+"Not Holiday" = "0",
+"Holiday" = "1")) %>%
+mutate(workingday = as_factor(as.character(workingday))) %>%
+  mutate(workingday = fct_recode(workingday,
+"NotWorkingDay" = "0",
+"WorkingDay" = "1")) %>%
+mutate(weathersit = as_factor(as.character(weathersit))) %>%
+mutate(weathersit = fct_recode(weathersit,
+"NoPrecip" = "1",
+"Misty" = "2",
+"LightPrecip" = "3",
+"HeavyPrecip" = "4")) %>%
+mutate(weekday = as_factor(as.character(weekday))) %>%
+mutate(weekday = fct_recode(weekday,
+"Monday" = "1",
+"Tuesday" = "2",
+"Wednesday" = "3",
+"Thursday" = "4",
+"Friday" = "5",
+"Saturday" = "6",
+"Sunday" = "0"))
+```
+
+```{r}
+set.seed(1234)
+train.rows = createDataPartition(y = bike$count, p=0.7, list = FALSE) #70% in training
+train = bike[train.rows,] 
+test = bike[-train.rows,]
+
+```
+There are 5,212 rows in the testing data and 12167 rows in the training data.
+
+```{r}
+mod1 = lm(count ~ season+mnth+hr+holiday+weekday+temp+weathersit, bike) #create linear regression model
+summary(mod1)
+```
+The adjusted R squared for this model is 0.62 which is pretty good. The p-value is signigicant because it is less than 0.05. I would say this is a good model to use to train and test our predictions.
+
+```{r}
+predict_train = predict(mod1, newdata = train)
+head(predict_train)
+```
+The predictions in the header training data range range from -60.46 to 11.54. There are 12,167 values in our predicted training data.
+
+```{r}
+predict_test = predict(mod1, newdata = test)
+head(predict_test)
+```
+The predictions in the training data range from -16.19 to 215.76. There are 5,212 values in our predicted testing data.
+
+```{r}
+SSE = sum((test$count - predict_test)^2) #sum of squared residuals from model
+SST = sum((test$count - mean(test$count))^2) #sum of squared residuals from a "naive" model
+1 - SSE/SST
+```
+The manually calculated R squared value is slightly different from the k fold cross validations r squared above. The r-squared value from the test and training data is .0053 higher than the cross validation r-squared value.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,111 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Clustering
+##Chelsea Powell
+
+```{r}
+library(tidyverse)
+library(cluster)
+#install.packages("factoextra")
+library(factoextra)
+```
+
+```{r}
+library(readr)
+trucks <- read_csv("trucks.csv")
+summary(trucks)
+```
+
+```{r}
+ggplot(trucks, aes(x=Distance, y=Speeding)) + geom_point()
+```
+There seems to be natural clustering of drivers that drive between 25-75 miles a day and a cluster of drivers that drive between 150-225 miles a day.
+
+```{r}
+trucks2 = trucks %>% dplyr::select(-Driver_ID)
+trucks2 = as.data.frame(scale(trucks2))
+summary(trucks2)
+```
+
+```{r}
+set.seed(1234)
+clusters1 <- kmeans(trucks2, 2)
+fviz_cluster(clusters1, trucks2)
+```
+The two clusters created by using the k-means clustering method are drivers that drive smaller distances and drivers that drive for longer distances daily.
+
+```{r}
+set.seed(123)
+fviz_nbclust(trucks2, kmeans, method = "wss")
+```
+ 
+```{r}
+set.seed(123)
+fviz_nbclust(trucks2, kmeans, method = "silhouette")
+```
+
+The two methods show that 4 is the opitimal number of clusters for this data set.
+
+```{r}
+set.seed(1234)
+clusters2 <- kmeans(trucks2, 4)
+fviz_cluster(clusters2, trucks2)
+```
+
+The four clusters are short distance drivers that don't speed as often, short distance drivers that speed more often, long distance drivers that don't speed as much, and long distance drivers that do speed more frequently.
+
+```{r}
+wineprice <- read_csv("wineprice.csv")
+summary(wineprice)
+```
+
+```{r}
+wine2 = wineprice %>% dplyr::select(-Year,-FrancePop)
+wine2 = as.data.frame(scale(wine2))
+summary(wine2)
+```
+
+```{r}
+set.seed(123)
+fviz_nbclust(wine2, kmeans, method = "wss")
+```
+ 
+```{r}
+set.seed(123)
+fviz_nbclust(wine2, kmeans, method = "silhouette")
+```
+Both methods show that 5 clusters would be the optimal number of clusters. 
+
+```{r}
+set.seed(1234)
+clusters3 <- kmeans(wine2, 5)
+fviz_cluster(clusters3, wine2)
+```
+
+
+```{r}
+m = c( "average", "single", "complete", "ward")
+names(m) = c( "average", "single", "complete", "ward")
+
+ac = function(x) {
+  agnes(wine2, method = x)$ac
+}
+map_dbl(m, ac)
+```
+
+```{r}
+hc = agnes(wine2, method = "ward") 
+pltree(hc, cex = 0.6, hang = -1, main = "Agglomerative Dendrogram") 
+```
+
+Divisive clustering  
+```{r}
+hc2 = diana(wine2)
+pltree(hc2, cex = 0.6, hang = -1, main = "Divisive Dendogram")
+```
+
+
+

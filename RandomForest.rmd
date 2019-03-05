@@ -1,0 +1,72 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Module 4 Assignment 2
+##Random Forests
+###Chelsea Powell
+
+
+```{r}
+#install.packages("ranger")
+library(tidyverse)
+library(caret)
+library(ranger)
+```
+
+```{r}
+library(readr)
+blood <- read_csv("Blood.csv")
+
+blood = blood %>% mutate(DonatedMarch = as.factor(DonatedMarch)) %>% 
+  mutate(DonatedMarch = fct_recode(DonatedMarch, "No" = "0", "Yes" = "1" ))
+
+str(blood)
+summary(blood)
+```
+
+```{r}
+set.seed(1234) 
+train.rows = createDataPartition(y = blood$DonatedMarch, p=0.7, list = FALSE) #70% in training
+train = blood[train.rows,] 
+test = blood[-train.rows,]
+```
+
+```{r}
+fit_control = trainControl(method = "cv",  
+                           number = 10) 
+
+set.seed(123)  
+rf_fit = train(DonatedMarch ~.,    
+                 data = train,   
+                 method = "ranger",  
+                 importance = "permutation", 
+                 num.trees = 100,
+                 trControl = fit_control)
+```
+
+```{r}
+varImp(rf_fit)
+rf_fit
+```
+TotalDonations is the most important variable in this dataset for this model. Mnts_Since_First is the least important variable.
+
+```{r}
+predRF_test = predict(rf_fit, train)
+head(predRF_test)
+```
+
+```{r}
+confusionMatrix(predRF_test, train$DonatedMarch, positive = "Yes")
+```
+The accuracy of this model is 89.5% which is better than the no information rate of 76.15%. The sensivity of this model is 0.6 and the specificity of this model is 0.9875.
+
+```{r}
+predRF_test = predict(rf_fit, newdata = test)
+```
+
+```{r}
+confusionMatrix(predRF_test, test$DonatedMarch, positive = "Yes")
+```
+The accuracy went down on our testing set at 78.12%. Compared to the no information rate of 76.34 our model is better but not by a ton.

@@ -1,0 +1,78 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+#BAN 502: Module 2 Assignment 1
+##Chelsea Powell
+###Simple Linear Regression and Correlation
+
+
+```{r setup}
+library(tidyverse)
+#install.packages("GGally")
+library(GGally)
+
+air = airquality
+glimpse(air)
+```
+a. This dataset describes New York air quality in New York from May to September 1973.
+b. There are 6 varialbes and 153 observations.
+c. There is missing data in the Ozone and Solar.R attributes.
+d. Ozone is most likely the response (Y) variable.
+
+```{r delete missing values}
+air2 = air %>% filter(!is.na(Ozone)) %>% filter(!is.na(Solar.R))
+glimpse(air2)
+```
+After removing any rows with missing data there are 111 observations and 6 variables. Fourty two rows were deleted from this data set.
+
+```{r}
+ggpairs(air2)
+ggcorr(air2, label = TRUE)
+```
+a. Temperature is most strongly correlated to the Ozone variable.
+b. Day is least strongly correlated to the Ozone variable.
+
+```{r}
+ggplot(air2, aes(x=Temp, y=Ozone)) + geom_point()
+```
+It appears that the Ozone and Temperature variables have a positive correlation. As the temperature variable increase so does the ozone.
+
+```{r}
+model1 = lm(Ozone ~ Temp, data=air2)
+summary(model1)
+
+confint(model1)
+```
+a. The R squared value is ok at 48.8%. The predictor varialbe of temperature is signifigant becuase the p-value is less than 0.05.
+b. The slope coefficient will likely fall in between -184.82 and -110.47.
+
+```{r}
+ggplot(air2, aes(x=Temp, y=Ozone)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+```
+
+```{r}
+testdata = data.frame(Temp = 80)
+predict(model1, newdata = testdata, interval = "predict")
+```
+
+```{r}
+ggplot(air2, aes(x=Day, y=Ozone)) + geom_point()
+```
+By just looking at the chart above it looks like there is no relationship between the two variables day and ozone.
+
+```{r}
+model2 = lm(Ozone ~ Day, data=air2)
+summary(model2)
+
+confint(model2)
+
+```
+a. The R squared value is very poor. It is very small value less than 1%. The p-value is not significant becuase it is .96 which is much larger than 0.05.
+b. The slope coefficient falls between 29.25 and 55.58.
+
+```{r}
+ggplot(air2, aes(x=Day, y=Ozone)) + geom_point() + geom_smooth(method="lm", se = FALSE)
+```
+
